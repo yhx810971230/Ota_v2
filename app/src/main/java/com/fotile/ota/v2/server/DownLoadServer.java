@@ -29,7 +29,7 @@ public class DownLoadServer extends Service {
     private DbHelper helper;
     private SQLiteDatabase db;
     /**
-     * 一个url对应一个下载线程
+     * 一个url（完整的下载链接）对应一个下载线程
      * 一个下载线程的生命周期从开始下载到结束下载终止
      */
     private Map<String, DownLoadTask> mapTask = new HashMap<>();
@@ -49,7 +49,7 @@ public class DownLoadServer extends Service {
     /**
      * 获取数据库中的缓存信息
      *
-     * @param url
+     * @param url 完整的下载url
      */
     public FileInfo getDownCacheInfo(String url) {
         db = helper.getReadableDatabase();
@@ -73,7 +73,7 @@ public class DownLoadServer extends Service {
      * 开始下载任务，从fileinfo对象中标识的文件起始位开始下载
      * 开始下载时，应保证数据库中已经存在url对应的下载数据
      *
-     * @param url
+     * @param url 完整的下载url
      * @param onProgressListener
      * @return
      */
@@ -121,6 +121,7 @@ public class DownLoadServer extends Service {
 
     /**
      * 停止下载任务
+     * @param url 完整的下载url
      */
     public void stop(String url) {
         DownLoadTask downLoadTask = mapTask.get(url);
@@ -183,11 +184,11 @@ public class DownLoadServer extends Service {
     }
 
     private void deleFile(FileInfo fileInfo) {
-        File file = new File(FILE_PATH, fileInfo.fileName);
+        File file = new File(FILE_PATH, fileInfo.file_name);
         if (file.exists()) {
             file.delete();
         }
-        file = new File(FILE_PATH, fileInfo.fileName + TEMP_FILE_NAME);
+        file = new File(FILE_PATH, fileInfo.file_name + TEMP_FILE_NAME);
         if (file.exists()) {
             file.delete();
         }

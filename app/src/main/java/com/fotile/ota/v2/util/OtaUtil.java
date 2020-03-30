@@ -18,4 +18,28 @@ public class OtaUtil {
         }
         return url.substring(index_start, index_end);
     }
+
+    /**
+     * 获取url前缀
+     * @return
+     */
+    public static String getUrlPre(String url){
+        if(url.contains("?")){
+            int index = url.indexOf("?");
+            return url.substring(0, index);
+        }
+        return url;
+    }
+
+    /**
+     * 获取url后缀
+     * @return
+     */
+    public static String getUrlSuf(String url){
+        if(url.contains("?")){
+            int index = url.indexOf("?");
+            return url.substring(index);
+        }
+        return "";
+    }
 }

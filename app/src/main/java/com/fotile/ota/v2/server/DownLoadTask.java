@@ -57,7 +57,8 @@ public class DownLoadTask extends Thread {
         HttpURLConnection connection = null;
         RandomAccessFile rwd = null;
         try {
-            URL url = new URL(info.url);
+            //前缀加后缀的组合
+            URL url = new URL(info.getUrl());
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(3000);
@@ -66,7 +67,7 @@ public class DownLoadTask extends Thread {
             //设置下载位置(从服务器上取要下载文件的某一段)
             connection.setRequestProperty("Range", "bytes=" + start + "-" + info.length);//设置下载范围
             //设置文件写入位置
-            File file = new File(FILE_PATH, info.fileName + TEMP_FILE_NAME);
+            File file = new File(FILE_PATH, info.file_name + TEMP_FILE_NAME);
             rwd = new RandomAccessFile(file, "rwd");
             //从文件的某一位置开始写入
             rwd.seek(start);
@@ -161,7 +162,7 @@ public class DownLoadTask extends Thread {
         HttpURLConnection connection = null;
         try {
             //连接网络
-            URL url = new URL(info.url);
+            URL url = new URL(info.getUrl());
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(3000);
@@ -226,8 +227,8 @@ public class DownLoadTask extends Thread {
                 case MSG_DOWN_COMPLETED:
                     if (null != listener) {
                         //下载完成rename文件
-                        File file = new File(FILE_PATH, info.fileName + TEMP_FILE_NAME);
-                        File newFile = new File(FILE_PATH, info.fileName);
+                        File file = new File(FILE_PATH, info.file_name + TEMP_FILE_NAME);
+                        File newFile = new File(FILE_PATH, info.file_name);
                         file.renameTo(newFile);
                         //通知下载中，更新进度，因为进度条是1秒更新一次，防止未更新到100%
                         listener.onDownLoading(info);

@@ -59,16 +59,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.start:
                 //在开始下载前，需要保证数据库中有一条下载信息
                 downLoadServer.addTask(fileInfo);
-                downLoadServer.start(fileInfo.url, this);
+                downLoadServer.start(fileInfo.getUrl(), this);
                 break;
             case R.id.pause:
-                downLoadServer.stop(fileInfo.url);
+                downLoadServer.stop(fileInfo.getUrl());
                 break;
             case R.id.again:
-                downLoadServer.restart(fileInfo.url, this);
+                downLoadServer.restart(fileInfo.getUrl(), this);
                 break;
             case R.id.clear:
-                downLoadServer.clear(fileInfo.url);
+                downLoadServer.clear(fileInfo.getUrl());
                 seekBar.setProgress(0);
                 break;
         }
@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             downLoadServer = downLoadBinder.getServer();
 
             //获取已经下载的信息，更新进度条
-            FileInfo cacheInfo = downLoadServer.getDownCacheInfo(fileInfo.url);
+            FileInfo cacheInfo = downLoadServer.getDownCacheInfo(fileInfo.getUrl());
             if (null != cacheInfo && cacheInfo.length > 0) {
                 double f = OtaUtil.getProgress(cacheInfo.finished, cacheInfo.length);
                 f = f < 0 ? 0 : f;
@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onDownCompleted(FileInfo fileInfo) {
-
+        OtaLog.LOGE("文件下载完成", "onDownCompleted");
     }
 
     @Override
