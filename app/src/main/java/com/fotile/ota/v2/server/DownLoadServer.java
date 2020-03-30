@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.fotile.ota.v2.util.OtaConstant.FILE_PATH;
+import static com.fotile.ota.v2.util.OtaConstant.TEMP_FILE_NAME;
 
 /**
  * 文件名称：DownLoadServer
@@ -31,7 +32,7 @@ public class DownLoadServer extends Service {
      * 一个url对应一个下载线程
      * 一个下载线程的生命周期从开始下载到结束下载终止
      */
-    private Map<String, DownLoadTask> mapDownload = new HashMap<>();
+    private Map<String, DownLoadTask> mapTask = new HashMap<>();
 
     private Object lock_start = new Object();
 
@@ -40,6 +41,9 @@ public class DownLoadServer extends Service {
         super.onCreate();
         helper = new DbHelper(this);
         db = helper.getReadableDatabase();
+        //创建文件夹目录
+        File folder = new File(FILE_PATH);
+        folder.mkdirs();
     }
 
     /**
@@ -47,7 +51,7 @@ public class DownLoadServer extends Service {
      *
      * @param url
      */
-    public FileInfo getDownInitInfo(String url) {
+    public FileInfo getDownCacheInfo(String url) {
         db = helper.getReadableDatabase();
         //查询数据库中的缓存的下载文件信息
         FileInfo fileInfoDb = helper.queryData(db, url);
@@ -55,22 +59,20 @@ public class DownLoadServer extends Service {
     }
 
     /**
-     * 初始化下载信息，在第一次下载某一个文件时调用
+     * 将一条下载信息添加到数据库,如果数据库中有该条数据，则不执行操作
      *
      * @param fileInfo
      */
-    public void initDownloadData(FileInfo fileInfo) {
+    public void addTask(FileInfo fileInfo) {
         db = helper.getWritableDatabase();
         //将下载信息更新到数据库
-        helper.updateData(db, fileInfo);
-        //创建文件夹目录
-        File folder = new File(FILE_PATH);
-        folder.mkdirs();
+        helper.insertData(db, fileInfo);
     }
 
     /**
      * 开始下载任务，从fileinfo对象中标识的文件起始位开始下载
      * 开始下载时，应保证数据库中已经存在url对应的下载数据
+     *
      * @param url
      * @param onProgressListener
      * @return
@@ -83,9 +85,13 @@ public class DownLoadServer extends Service {
                 db = helper.getReadableDatabase();
                 //去数据库中获取缓存的下载信息，包括下载进度，然后根据该下载进度去执行文件断点下载
                 FileInfo fileInfo = helper.queryData(db, url);
+                if (null == fileInfo) {
+                    OtaLog.LOGE("下载信息FileInfo为空...", fileInfo);
+                    return false;
+                }
 
                 //判断是否有相同的url下载任务正在执行
-                DownLoadTask downLoadTask = mapDownload.get(url);
+                DownLoadTask downLoadTask = mapTask.get(url);
                 if (null != downLoadTask) {
                     if (downLoadTask.getFileInfo().status == DownStatus.DOWN_STATUS_DOWNING) {
                         onProgressListener.onDownError(fileInfo, "文件正在下载中...");
@@ -104,7 +110,7 @@ public class DownLoadServer extends Service {
                 //开始任务下载
                 downLoadTask = new DownLoadTask(fileInfo, helper, onProgressListener);
                 downLoadTask.start();
-                mapDownload.put(url, downLoadTask);
+                mapTask.put(url, downLoadTask);
                 return true;
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -117,7 +123,7 @@ public class DownLoadServer extends Service {
      * 停止下载任务
      */
     public void stop(String url) {
-        DownLoadTask downLoadTask = mapDownload.get(url);
+        DownLoadTask downLoadTask = mapTask.get(url);
         if (null != downLoadTask) {
             downLoadTask.stopTask();
         }
@@ -135,17 +141,14 @@ public class DownLoadServer extends Service {
             Thread.sleep(100);
 
             //删除本地下载文件
-            DownLoadTask downLoadTask = mapDownload.get(url);
+            DownLoadTask downLoadTask = mapTask.get(url);
             if (null != downLoadTask) {
                 FileInfo fileInfo = downLoadTask.getFileInfo();
-                File file = new File(FILE_PATH, fileInfo.fileName);
-                if (file.exists()) {
-                    file.delete();
-                }
+                deleFile(fileInfo);
             }
 
             //移除task
-            mapDownload.remove(url);
+            mapTask.remove(url);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -155,38 +158,46 @@ public class DownLoadServer extends Service {
         start(url, onProgressListener);
     }
 
-    public void clear(String url){
+    public void clear(String url) {
         try {
             stop(url);
             //sleep保证下载线程被暂停
             Thread.sleep(100);
 
             //删除本地下载文件
-            DownLoadTask downLoadTask = mapDownload.get(url);
+            DownLoadTask downLoadTask = mapTask.get(url);
             if (null != downLoadTask) {
                 FileInfo fileInfo = downLoadTask.getFileInfo();
-                File file = new File(FILE_PATH, fileInfo.fileName);
-                if (file.exists()) {
-                    file.delete();
-                }
+                deleFile(fileInfo);
             }
 
             //移除task
-            mapDownload.remove(url);
+            mapTask.remove(url);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         db = helper.getWritableDatabase();
         //删除数据库下载信息
-        helper.resetData(db, url);
+        helper.deleteData(db, url);
 
+    }
+
+    private void deleFile(FileInfo fileInfo) {
+        File file = new File(FILE_PATH, fileInfo.fileName);
+        if (file.exists()) {
+            file.delete();
+        }
+        file = new File(FILE_PATH, fileInfo.fileName + TEMP_FILE_NAME);
+        if (file.exists()) {
+            file.delete();
+        }
     }
 
     /**
      * 获取当前任务状态
      */
     public DownStatus getCurrentStatus(String url) {
-        DownLoadTask downLoadTask = mapDownload.get(url);
+        DownLoadTask downLoadTask = mapTask.get(url);
         if (null != downLoadTask) {
             return downLoadTask.getFileInfo().status;
         }

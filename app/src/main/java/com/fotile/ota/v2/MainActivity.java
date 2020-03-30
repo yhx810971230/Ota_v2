@@ -13,6 +13,7 @@ import android.widget.SeekBar;
 
 import com.fotile.ota.v2.bean.FileInfo;
 import com.fotile.ota.v2.server.DownLoadServer;
+import com.fotile.ota.v2.util.OtaLog;
 import com.fotile.ota.v2.util.OtaUtil;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnProgressListener {
@@ -42,8 +43,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnAgain.setOnClickListener(this);
         btnClear.setOnClickListener(this);
 
-        String url = "http://downloadz.dewmobile.net/Official/Kuaiya482.apk";
-        String fileName = "Kuaiya482.apk";
+        String url = "http://fotile-oss-test-liupei.oss-cn-hangzhou.aliyuncs.com/Z15CH-SR203-release-unsigned.apk?Expires=1585583628&OSSAccessKeyId=TMP.3KfnqSsZnanZUdczmom7LcKUmLBfvqiYwWFstGvqFpDxxrBLkYifG2Ko6xADrh5sp7ia4c6WcCKADyoC5hKoCUjTpLfRBD&Signature=%2Fn%2Bl3AA38mfNyO2484l7KWcbf3Y%3D";
+        String fileName = OtaUtil.getFileName(url);
         fileInfo = new FileInfo(fileName, url);
 
         //绑定服务
@@ -56,6 +57,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.start:
+                //在开始下载前，需要保证数据库中有一条下载信息
+                downLoadServer.addTask(fileInfo);
                 downLoadServer.start(fileInfo.url, this);
                 break;
             case R.id.pause:
@@ -76,11 +79,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onServiceConnected(ComponentName name, IBinder service) {
             DownLoadServer.DownLoadBinder downLoadBinder = (DownLoadServer.DownLoadBinder) service;
             downLoadServer = downLoadBinder.getServer();
-            //初始化数据信息
-            downLoadServer.initDownloadData(fileInfo);
 
-            if (fileInfo.length > 0) {
-                double f = OtaUtil.getProgress(fileInfo.finished, fileInfo.length);
+            //获取已经下载的信息，更新进度条
+            FileInfo cacheInfo = downLoadServer.getDownCacheInfo(fileInfo.url);
+            if (null != cacheInfo && cacheInfo.length > 0) {
+                double f = OtaUtil.getProgress(cacheInfo.finished, cacheInfo.length);
                 f = f < 0 ? 0 : f;
                 f = f > 1 ? 1 : f;
                 int seek_progress = (int) (f * 100);
@@ -104,13 +107,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             seekBar.setProgress(seek_progress);
 
-//            OtaLog.LOGE("下载进度", f);
+            OtaLog.LOGE("下载进度", f);
         }
     }
 
     @Override
     public void onDownError(FileInfo fileInfo, String error) {
-
+        OtaLog.LOGE("文件下载错误onDownError", error);
     }
 
     @Override

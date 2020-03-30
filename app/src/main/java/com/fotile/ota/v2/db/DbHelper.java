@@ -33,20 +33,22 @@ public class DbHelper extends SQLiteOpenHelper {
     /**
      * 插入一条下载信息
      */
-    private void insertData(SQLiteDatabase db, FileInfo info) {
-        ContentValues values = new ContentValues();
-        values.put("fileName", info.fileName);
-        values.put("url", info.url);
-        values.put("length", info.length);
-        values.put("finished", info.finished);
-        db.insert(TABLE, null, values);
+    public void insertData(SQLiteDatabase db, FileInfo info) {
+        if (!isExist(db, info.url)) {
+            ContentValues values = new ContentValues();
+            values.put("fileName", info.fileName);
+            values.put("url", info.url);
+            values.put("length", info.length);
+            values.put("finished", info.finished);
+            db.insert(TABLE, null, values);
+        }
     }
 
     /**
      * 是否已经插入这条数据
      */
-    private boolean isExist(SQLiteDatabase db, FileInfo info) {
-        Cursor cursor = db.query(TABLE, null, "url = ?", new String[]{info.url}, null, null, null, null);
+    private boolean isExist(SQLiteDatabase db, String url) {
+        Cursor cursor = db.query(TABLE, null, "url = ?", new String[]{url}, null, null, null, null);
         boolean exist = cursor.moveToNext();
         cursor.close();
         return exist;
@@ -60,15 +62,10 @@ public class DbHelper extends SQLiteOpenHelper {
      */
     public void updateData(SQLiteDatabase db, FileInfo fileInfo) {
         synchronized (lock_update) {
-            //如果数据库不存在，添加一条数据
-            if (!isExist(db, fileInfo)) {
-                insertData(db, fileInfo);
-            } else {
-                ContentValues values = new ContentValues();
-                values.put("finished", fileInfo.finished);
-                values.put("length", fileInfo.length);
-                db.update(TABLE, values, "url = ?", new String[]{fileInfo.url});
-            }
+            ContentValues values = new ContentValues();
+            values.put("finished", fileInfo.finished);
+            values.put("length", fileInfo.length);
+            db.update(TABLE, values, "url = ?", new String[]{fileInfo.url});
         }
     }
 
@@ -78,7 +75,7 @@ public class DbHelper extends SQLiteOpenHelper {
     public FileInfo queryData(SQLiteDatabase db, String url) {
         Cursor cursor = db.query(TABLE, null, "url = ?", new String[]{url}, null, null, null, null);
         FileInfo info = null;
-        if (cursor != null) {
+        if (cursor != null && cursor.getCount() > 0) {
             info = new FileInfo();
             while (cursor.moveToNext()) {
                 String fileName = cursor.getString(cursor.getColumnIndex("fileName"));
@@ -98,10 +95,16 @@ public class DbHelper extends SQLiteOpenHelper {
      * 重置一条下载信息
      */
     public void resetData(SQLiteDatabase db, String url) {
-        ContentValues values = new ContentValues();
-        values.put("finished", 0);
-        values.put("length", 0);
-        db.update(TABLE, values, "url = ?", new String[]{url});
+        if (isExist(db, url)) {
+            ContentValues values = new ContentValues();
+            values.put("finished", 0);
+            values.put("length", 0);
+            db.update(TABLE, values, "url = ?", new String[]{url});
+        }
+    }
+
+    public void deleteData(SQLiteDatabase db, String url) {
+        db.delete(TABLE, "url = ?", new String[]{url});
     }
 
 }

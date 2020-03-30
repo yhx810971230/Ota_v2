@@ -8,6 +8,7 @@ import com.fotile.ota.v2.OnProgressListener;
 import com.fotile.ota.v2.bean.FileInfo;
 import com.fotile.ota.v2.db.DbHelper;
 import com.fotile.ota.v2.util.DownStatus;
+import com.fotile.ota.v2.util.OtaLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import static com.fotile.ota.v2.util.OtaConstant.FILE_PATH;
+import static com.fotile.ota.v2.util.OtaConstant.TEMP_FILE_NAME;
 
 public class DownLoadTask extends Thread {
     private FileInfo info;
@@ -64,7 +66,7 @@ public class DownLoadTask extends Thread {
             //设置下载位置(从服务器上取要下载文件的某一段)
             connection.setRequestProperty("Range", "bytes=" + start + "-" + info.length);//设置下载范围
             //设置文件写入位置
-            File file = new File(FILE_PATH, info.fileName);
+            File file = new File(FILE_PATH, info.fileName + TEMP_FILE_NAME);
             rwd = new RandomAccessFile(file, "rwd");
             //从文件的某一位置开始写入
             rwd.seek(start);
@@ -73,7 +75,8 @@ public class DownLoadTask extends Thread {
             //在此处更新状态为下载中，因为在while循环中有stop的判断，不可更新为 MSG_DOWN_DOWNING
             setStatus(DownStatus.DOWN_STATUS_DOWNING);
 
-            if (connection.getResponseCode() == 206) {//文件部分下载，返回码为206
+            int code = connection.getResponseCode();
+            if (code == 206 || code == 200) {//文件部分下载，返回码为206
                 InputStream is = connection.getInputStream();
                 byte[] buffer = new byte[1024 * 4];
                 int len;
@@ -99,7 +102,7 @@ public class DownLoadTask extends Thread {
                     helper.updateData(db, info);
 
                     long time = System.currentTimeMillis();
-                    if (time - time_start > 1000) {
+                    if (time - time_start > 500) {
                         //更新界面显示
                         Message msg = new Message();
                         msg.what = MSG_DOWN_DOWNING;
@@ -139,6 +142,14 @@ public class DownLoadTask extends Thread {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+
+                //更新页面显示
+                Message msg = new Message();
+                //错误信息上报
+                msg.obj = e.getMessage();
+                msg.what = MSG_DOWN_ERROR;
+                setStatus(DownStatus.DOWN_STATUS_ERROR);
+                handler.sendMessage(msg);
             }
         }
     }
@@ -158,6 +169,7 @@ public class DownLoadTask extends Thread {
             if (connection.getResponseCode() == 200) {//网络连接成功
                 //获得文件长度
                 length = connection.getContentLength();
+                OtaLog.LOGE("获取下载文件length", length);
             }
             if (length <= 0) {
                 //连接失败
@@ -213,6 +225,12 @@ public class DownLoadTask extends Thread {
                 //下载完成
                 case MSG_DOWN_COMPLETED:
                     if (null != listener) {
+                        //下载完成rename文件
+                        File file = new File(FILE_PATH, info.fileName + TEMP_FILE_NAME);
+                        File newFile = new File(FILE_PATH, info.fileName);
+                        file.renameTo(newFile);
+                        //通知下载中，更新进度，因为进度条是1秒更新一次，防止未更新到100%
+                        listener.onDownLoading(info);
                         listener.onDownCompleted(info);
                     }
                     break;
