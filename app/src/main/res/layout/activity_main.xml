@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.fotile.ota.v2.MainActivity">
+
+    <SeekBar
+        android:id="@+id/seekbar"
+        android:layout_width="600px"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="50px"
+        android:max="100"/>
+
+    <Button
+        android:id="@+id/start"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:layout_marginTop="50px"
+        android:text="开始下载"/>
+
+    <Button
+        android:id="@+id/pause"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:text="暂停下载"/>
+
+    <Button
+        android:id="@+id/again"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:text="重新下载"/>
+
+    <Button
+        android:id="@+id/clear"
+        android:layout_width="match_parent"
+        android:layout_height="70px"
+        android:text="清空下载"/>
+</LinearLayout>
