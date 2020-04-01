@@ -52,6 +52,7 @@ public class DbHelper extends SQLiteOpenHelper {
      * 插入一条下载信息
      */
     public void insertData(SQLiteDatabase db, FileInfo info) {
+        //如果不存在该条信息，执行插入数据
         if (!isExist(db, info.getUrl())) {
             ContentValues values = new ContentValues();
             values.put(FILE_NAME, info.file_name);
@@ -60,6 +61,12 @@ public class DbHelper extends SQLiteOpenHelper {
             values.put(LENGTH, info.length);
             values.put(FINISHED, info.finished);
             db.insert(TABLE, null, values);
+        }
+        //如果存在该条信息，更新一下url_suf，同一个文件在链接有效期过后会有不同的后缀
+        else {
+            ContentValues values = new ContentValues();
+            values.put(URL_SUF, info.url_suf);
+            db.update(TABLE, values, URL_PRE + " = ?", new String[]{ info.url_pre });
         }
     }
 

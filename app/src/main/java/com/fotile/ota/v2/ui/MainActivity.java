@@ -1,4 +1,4 @@
-package com.fotile.ota.v2;
+package com.fotile.ota.v2.ui;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -11,6 +11,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 
+import com.fotile.ota.v2.OnProgressListener;
+import com.fotile.ota.v2.R;
 import com.fotile.ota.v2.bean.FileInfo;
 import com.fotile.ota.v2.server.DownLoadServer;
 import com.fotile.ota.v2.util.OtaLog;
@@ -43,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnAgain.setOnClickListener(this);
         btnClear.setOnClickListener(this);
 
-        String url = "http://fotile-oss-test-liupei.oss-cn-hangzhou.aliyuncs.com/Z15CH-SR203-release-unsigned.apk?Expires=1585583628&OSSAccessKeyId=TMP.3KfnqSsZnanZUdczmom7LcKUmLBfvqiYwWFstGvqFpDxxrBLkYifG2Ko6xADrh5sp7ia4c6WcCKADyoC5hKoCUjTpLfRBD&Signature=%2Fn%2Bl3AA38mfNyO2484l7KWcbf3Y%3D";
+        String url = getIntent().getStringExtra("url");
         String fileName = OtaUtil.getFileName(url);
         fileInfo = new FileInfo(fileName, url);
 
@@ -118,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onDownCompleted(FileInfo fileInfo) {
-        OtaLog.LOGE("文件下载完成", "onDownCompleted");
+
     }
 
     @Override

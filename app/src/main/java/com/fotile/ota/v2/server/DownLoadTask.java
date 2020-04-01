@@ -230,6 +230,7 @@ public class DownLoadTask extends Thread {
                         File file = new File(FILE_PATH, info.file_name + TEMP_FILE_NAME);
                         File newFile = new File(FILE_PATH, info.file_name);
                         file.renameTo(newFile);
+                        OtaLog.LOGE("文件下载完成", "rename文件名称" + newFile.getName());
                         //通知下载中，更新进度，因为进度条是1秒更新一次，防止未更新到100%
                         listener.onDownLoading(info);
                         listener.onDownCompleted(info);
